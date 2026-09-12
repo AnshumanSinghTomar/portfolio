@@ -22,6 +22,71 @@
   if (reduced) enterPage();
   else window.setTimeout(enterPage, 650);
 
+  /* Gradient Waves background: canvas keeps the effect lightweight on a static page. */
+  const wavesCanvas = document.querySelector('.gradient-waves');
+  if (wavesCanvas && !reduced) {
+    const waveContext = wavesCanvas.getContext('2d');
+    const waveHost = wavesCanvas.closest('.launch-hero');
+    let waveFrame = 0;
+    let waveVisible = true;
+    let waveWidth = 0;
+    let waveHeight = 0;
+    let waveScale = 1;
+
+    function resizeWaves() {
+      const bounds = waveHost.getBoundingClientRect();
+      waveScale = Math.min(window.devicePixelRatio || 1, 1.5);
+      waveWidth = Math.max(1, Math.round(bounds.width));
+      waveHeight = Math.max(1, Math.round(bounds.height));
+      wavesCanvas.width = Math.round(waveWidth * waveScale);
+      wavesCanvas.height = Math.round(waveHeight * waveScale);
+      waveContext.setTransform(waveScale, 0, 0, waveScale, 0, 0);
+    }
+
+    function drawWaves(time) {
+      waveFrame = 0;
+      if (!waveVisible) return;
+      waveContext.clearRect(0, 0, waveWidth, waveHeight);
+      const horizon = waveHeight * .53;
+      const spacing = Math.max(22, waveHeight / 18);
+      const cycle = time * .00032;
+
+      for (let index = 0; index < 15; index += 1) {
+        const progress = index / 14;
+        const yBase = horizon + (index - 7) * spacing;
+        const amplitude = 14 + progress * 35;
+        const gradient = waveContext.createLinearGradient(0, yBase, waveWidth, yBase);
+        gradient.addColorStop(0, 'rgba(255, 76, 36, 0)');
+        gradient.addColorStop(.2, `rgba(255, 76, 36, ${.04 + progress * .06})`);
+        gradient.addColorStop(.5, `rgba(255, 205, 170, ${.11 + progress * .09})`);
+        gradient.addColorStop(.8, `rgba(255, 76, 36, ${.04 + progress * .06})`);
+        gradient.addColorStop(1, 'rgba(255, 76, 36, 0)');
+        waveContext.beginPath();
+        for (let x = 0; x <= waveWidth; x += 10) {
+          const y = yBase
+            + Math.sin((x / waveWidth) * Math.PI * 2.2 + cycle + index * .42) * amplitude
+            + Math.sin((x / waveWidth) * Math.PI * 5.4 - cycle * 1.35 + index * .23) * amplitude * .26;
+          if (x === 0) waveContext.moveTo(x, y);
+          else waveContext.lineTo(x, y);
+        }
+        waveContext.strokeStyle = gradient;
+        waveContext.lineWidth = 1;
+        waveContext.stroke();
+      }
+      waveFrame = window.requestAnimationFrame(drawWaves);
+    }
+
+    resizeWaves();
+    window.addEventListener('resize', resizeWaves, { passive: true });
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(([entry]) => {
+        waveVisible = entry.isIntersecting;
+        if (waveVisible && !waveFrame) waveFrame = window.requestAnimationFrame(drawWaves);
+      }).observe(waveHost);
+    }
+    waveFrame = window.requestAnimationFrame(drawWaves);
+  }
+
   /* ProfileCard-inspired portrait: a fine-pointer tilt, sheen and cursor-following glow. */
   const profilePortrait = document.querySelector('.profile-card');
   if (profilePortrait && !reduced) {
@@ -298,62 +363,6 @@
   window.addEventListener('resize', () => {
     if (menuOpen && window.innerWidth > 900) setMenu(false);
   }, { passive: true });
-
-  /* Fine-pointer-only custom cursor with contextual states. */
-  const dot = document.getElementById('cursor-dot');
-  const ring = document.getElementById('cursor-ring');
-  if (!reduced && finePointer && dot && ring) {
-    body.classList.add('has-custom-cursor');
-    let mouseX = -100;
-    let mouseY = -100;
-    let ringX = -100;
-    let ringY = -100;
-    let cursorFrame = 0;
-
-    function drawCursor() {
-      cursorFrame = 0;
-      ringX += (mouseX - ringX) * 0.16;
-      ringY += (mouseY - ringY) * 0.16;
-      dot.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0) translate(-50%, -50%)`;
-      ring.style.transform = `translate3d(${ringX}px, ${ringY}px, 0) translate(-50%, -50%)`;
-      if (Math.abs(mouseX - ringX) > 0.1 || Math.abs(mouseY - ringY) > 0.1) {
-        cursorFrame = requestAnimationFrame(drawCursor);
-      }
-    }
-
-    document.addEventListener('pointermove', (event) => {
-      mouseX = event.clientX;
-      mouseY = event.clientY;
-      dot.classList.add('cur-vis');
-      ring.classList.add('cur-vis');
-      if (!cursorFrame) cursorFrame = requestAnimationFrame(drawCursor);
-    }, { passive: true });
-
-    const interactiveSelector = 'a, button, .cred-item, .rule-row, .project-block, .stat-item';
-    document.addEventListener('pointerover', (event) => {
-      const target = event.target.closest(interactiveSelector);
-      if (!target) return;
-      let label = 'VIEW';
-      if (target.matches('.rule-row')) label = 'READ';
-      else if (target.matches('a[href^="mailto"], a[href^="tel"]')) label = 'HELLO';
-      else if (target.matches('a[target="_blank"]')) label = 'OPEN';
-      ring.dataset.label = label;
-      dot.classList.add('cur-big');
-      ring.classList.add('cur-big');
-    });
-    document.addEventListener('pointerout', (event) => {
-      const from = event.target.closest(interactiveSelector);
-      const to = event.relatedTarget?.closest?.(interactiveSelector);
-      if (!from || from === to) return;
-      dot.classList.remove('cur-big');
-      ring.classList.remove('cur-big');
-      ring.dataset.label = '';
-    });
-    root.addEventListener('mouseleave', () => {
-      dot.classList.remove('cur-vis');
-      ring.classList.remove('cur-vis');
-    });
-  }
 
   /* Project spotlight/tilt and magnetic controls compose via CSS variables. */
   if (!reduced && finePointer) {

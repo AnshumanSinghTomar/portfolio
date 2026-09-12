@@ -1065,13 +1065,29 @@ body {
   cursor: auto;
   background: radial-gradient(circle at 72% 7%, rgba(255, 76, 36, .08), transparent 28rem), var(--black);
 }
-a, button, input, textarea, select { cursor: pointer; }
-body.has-custom-cursor,
-body.has-custom-cursor a,
-body.has-custom-cursor button,
-body.has-custom-cursor input,
-body.has-custom-cursor textarea,
-body.has-custom-cursor select { cursor: none; }
+/*
+   Desktop mouse usability
+   -----------------------
+   The decorative cursor used to replace the operating-system cursor on every
+   fine-pointer device.  That makes it difficult to tell when text can be
+   selected or an input can be edited, and it can disappear when the animation
+   is interrupted.  Keep the native cursor as the reliable interaction cue.
+*/
+#cursor-dot,
+#cursor-ring { display: none !important; }
+
+a,
+button,
+[role="button"],
+.cred-item,
+.rule-row,
+.project-block,
+.stat-item { cursor: pointer; }
+
+input,
+textarea { cursor: text; }
+
+select { cursor: default; }
 
 #scroll-bar {
   width: 100%;
@@ -1683,6 +1699,16 @@ body.is-paused .rules-marquee-inner { animation-play-state: paused; }
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
+.gradient-waves {
+  position: absolute;
+  z-index: -3;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: .72;
+  mix-blend-mode: screen;
+}
 .launch-grid {
   position: absolute;
   z-index: -2;
@@ -1940,6 +1966,7 @@ body.page-entered .launch-card:nth-child(4) { transition-delay: .66s; }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .gradient-waves { display: none; }
   .launch-availability span { animation: none; }
   .launch-availability,
   .launch-name,
